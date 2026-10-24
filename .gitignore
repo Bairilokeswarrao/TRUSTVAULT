@@ -1,0 +1,5 @@
+backend/.env
+backend/data/
+backend/private_uploads/*
+!backend/private_uploads/.gitkeep
+node_modules/

@@ -1,0 +1,14 @@
+{
+  "name": "trustvault-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TrustVault: confidential document sharing where the server decides every access and the audit trail is tamper-evident.",
+  "main": "src/server.js",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "init": "node src/init.js",
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "seed": "node --disable-warning=ExperimentalWarning src/seed.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 \"tests/*.test.js\""
+  }
+}

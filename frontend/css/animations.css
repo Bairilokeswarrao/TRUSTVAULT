@@ -1,0 +1,406 @@
+/* ==========================================================================
+   TrustVault — motion layer
+   Inspired by the "Lamp Login Animation": a dark room, a pull-cord lamp that
+   switches on, a cone of warm light, drifting fireflies, and a form that
+   fades into the light. The same light/firefly language is carried through
+   every page of the app.
+
+   Rules of this file
+   - Same-origin only (the CSP allows no inline styles, no external assets).
+   - Everything is gated on `html.fx`, which fx.js sets. Without JS the site
+     simply renders in its normal, static form.
+   - prefers-reduced-motion switches every animation off (see the bottom).
+   ========================================================================== */
+
+:root {
+  --amber: #ffd23f;
+  --amber-soft: #ffe58a;
+  --amber-deep: #f5b800;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+}
+
+/* ------------------------------------------------------------------ keyframes */
+@keyframes fxUp      { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes fxDown    { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+@keyframes fxLeft    { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+@keyframes fxPop     { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: none; } }
+@keyframes fxFade    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fxGrowX   { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes fxGrowY   { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes fxFlow    { from { background-position: 0 0; } to { background-position: 200% 0; } }
+@keyframes fxShake   { 0%,100% { transform: none; } 15% { transform: translateX(-9px); } 35% { transform: translateX(8px); } 55% { transform: translateX(-6px); } 75% { transform: translateX(4px); } }
+@keyframes fxLogo    { 0%,100% { filter: drop-shadow(0 0 2px rgba(255, 210, 63, .25)); } 50% { filter: drop-shadow(0 0 9px rgba(255, 210, 63, .75)); } }
+@keyframes fxGlow    { 0%,100% { opacity: .55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+@keyframes fxPulseRed{ 0%,100% { box-shadow: var(--shadow-sm); } 50% { box-shadow: 0 0 0 4px rgba(192, 38, 45, .16), var(--shadow-sm); } }
+@keyframes fxRipple  { from { transform: translate(-50%, -50%) scale(0); opacity: .45; } to { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+@keyframes fxShine   { from { transform: translateX(-130%) skewX(-20deg); } to { transform: translateX(260%) skewX(-20deg); } }
+@keyframes fxCord    { 0% { transform: translateY(0); } 35% { transform: translateY(15px); } 62% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
+@keyframes fxFlicker { 0% { opacity: 0; } 8% { opacity: .9; } 14% { opacity: .25; } 24% { opacity: 1; } 31% { opacity: .55; } 100% { opacity: 1; } }
+@keyframes fxFloat   { 0% { transform: translate(0, 0); } 100% { transform: translate(var(--dx), var(--dy)); } }
+@keyframes fxBlink   { 0%,100% { opacity: .08; } 50% { opacity: var(--peak, .9); } }
+@keyframes fxBreath  { 0%,100% { opacity: .85; } 50% { opacity: 1; } }
+
+/* ==========================================================================
+   Fireflies (created by fx.js, one fixed layer per page)
+   ========================================================================== */
+.fireflies { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.fly {
+  position: absolute; left: var(--x); top: var(--y); width: var(--s); height: var(--s); border-radius: 50%;
+  background: var(--fly, #ffd23f); box-shadow: 0 0 calc(var(--s) * 3) calc(var(--s) * .9) var(--fly-glow, rgba(255, 210, 63, .55));
+  opacity: .08;
+  animation: fxFloat var(--dur) ease-in-out var(--delay) infinite alternate, fxBlink var(--blink) ease-in-out var(--delay) infinite;
+}
+/* in the app the flies are quieter and use the brand colours */
+html.fx body:not(.auth-page) .fireflies { opacity: .8; }
+html.fx body:not(.auth-page) .fly:nth-child(3n) { --fly: #ffb347; --fly-glow: rgba(255, 160, 50, .5); }
+.auth-page .fireflies { opacity: 0; transition: opacity 1.6s ease .4s; }
+.auth-page.lit .fireflies { opacity: 1; }
+
+/* ==========================================================================
+   App pages
+   ========================================================================== */
+
+html.fx main, html.fx .site-footer { position: relative; z-index: 1; }
+
+/* top bar */
+html.fx .top { animation: fxDown .6s var(--ease-out) both; }
+html.fx .logo-mark { animation: fxLogo 4.5s ease-in-out infinite; }
+html.fx .brand:hover .logo-mark { transform: rotate(-6deg) scale(1.08); transition: transform .35s var(--ease-spring); }
+html.fx nav a { position: relative; }
+html.fx nav a.fx-nav { animation: fxDown .55s var(--ease-out) both; animation-delay: calc(.2s + var(--i, 0) * .08s); }
+html.fx nav a[aria-current="page"]::after {
+  content: ""; position: absolute; left: .9rem; right: .9rem; bottom: -1px; height: 2px; border-radius: 2px; transform-origin: left;
+  background: linear-gradient(90deg, #ffb347, #ffd23f, #fff1a8); box-shadow: 0 0 12px rgba(255, 210, 63, .65);
+  animation: fxGrowX .7s var(--ease-out) .55s both;
+}
+html.fx .who { animation: fxFade .8s ease .35s both; }
+html.fx .avatar { transition: transform .35s var(--ease-spring), box-shadow .3s; }
+html.fx .avatar:hover { transform: scale(1.12) rotate(6deg); box-shadow: 0 0 0 3px rgba(255, 210, 63, .45); }
+
+/* generic entrance for anything fx.js tags (headings, cards, tables, alerts) */
+html.fx .fx-in { animation: fxUp .7s var(--ease-out) both; animation-delay: var(--d, 0s); }
+html.fx h1.fx-in { animation-duration: .8s; }
+html.fx .alert.fx-in { animation-name: fxLeft; }
+html.fx .stat.fx-in, html.fx .grid > .card.fx-in { animation-name: fxPop; animation-timing-function: var(--ease-spring); }
+html.fx h2.fx-in::before { transform-origin: top; animation: fxGrowY .6s var(--ease-out) calc(var(--d, 0s) + .2s) both; }
+html.fx tbody tr.fx-row { animation: fxLeft .5s var(--ease-out) both; animation-delay: var(--d, 0s); }
+html.fx .chip { animation: fxPop .45s var(--ease-spring) both; }
+html.fx .site-footer { animation: fxFade 1s ease .6s both; }
+
+/* hover life */
+html.fx .card { transition: transform .3s var(--ease-out), box-shadow .3s, border-color .3s; }
+html.fx .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--amber-deep) 45%, var(--line)); }
+html.fx .stat::before { background-size: 200% 100%; background-image: linear-gradient(90deg, #ffb347, #ffd23f, #fff1a8, #ffb347); animation: fxFlow 6s linear infinite; }
+html.fx tbody tr { transition: background .2s, box-shadow .2s; }
+html.fx tbody tr:hover { box-shadow: inset 3px 0 0 var(--amber-deep); }
+html.fx .alert { transition: transform .25s var(--ease-out); }
+html.fx .alert:hover { transform: translateX(4px); }
+html.fx .alert.critical, html.fx .alert.high { animation-name: fxLeft, fxPulseRed; animation-duration: .6s, 2.6s; animation-iteration-count: 1, infinite; animation-delay: var(--d, 0s), 1.2s; }
+html.fx a:not(.brand) { transition: color .2s; }
+
+/* buttons: lift, ripple, shine */
+html.fx button:not(.lamp-pull):not(.page-lamp-btn) { position: relative; overflow: hidden; }
+html.fx button:not(.link):not(.lamp-pull):not(.page-lamp-btn):hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(10, 37, 64, .16); }
+html.fx button:not(.link):not(.lamp-pull):not(.page-lamp-btn):active { transform: translateY(1px) scale(.98); }
+html.fx button.primary::after {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 40%; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .45), transparent);
+  transform: translateX(-130%) skewX(-20deg);
+}
+html.fx button.primary:hover::after { animation: fxShine .8s ease; }
+.ripple { position: absolute; width: 220px; height: 220px; border-radius: 50%; background: currentColor; pointer-events: none; animation: fxRipple .65s ease-out forwards; }
+
+/* inputs */
+html.fx input, html.fx select { transition: border-color .2s, box-shadow .25s, transform .2s var(--ease-out); }
+html.fx input:focus, html.fx select:focus { transform: translateY(-1px); }
+
+/* toast springs up */
+html.fx #toast { transition: opacity .3s, transform .45s var(--ease-spring); transform: translate(-50%, 24px) scale(.94); }
+html.fx #toast.show { transform: translate(-50%, 0) scale(1); }
+
+/* leaving a page: dim like a lamp being switched off */
+html.fx body { transition: opacity .26s ease, filter .26s ease; }
+html.leaving body { opacity: 0; filter: brightness(.5) blur(2px); }
+
+/* ==========================================================================
+   Login — the lamp scene
+   ========================================================================== */
+.auth-page {
+  /* the sign-in screen is always a dark room, whatever the OS theme */
+  --bg: #08080a; --panel: #121114; --panel-2: #17151a; --ink: #f4f0e6; --ink-2: #d8d2c2; --muted: #9a937f;
+  --line: #2a2720; --line-strong: #3a352a; --chip: #1c1a15;
+  --brand: #ffd23f; --brand-hover: #ffe27a; --accent: #ffd23f; --accent-ink: #1a1500;
+  --focus: 0 0 0 3px rgba(255, 210, 63, .28); --danger: #ff8a8f; --shadow-sm: 0 1px 2px rgba(0, 0, 0, .5);
+  color-scheme: dark; background: #08080a; color: var(--ink);
+}
+.auth-page .auth-shell { position: relative; z-index: 1; background: transparent; }
+.auth-page .auth-intro {
+  background:
+    radial-gradient(circle at 90% 100%, rgba(255, 210, 63, .05), transparent 50%),
+    linear-gradient(160deg, #0d0c0a, #060606);
+}
+.auth-page .auth-intro::after { opacity: .35; background-image: linear-gradient(rgba(255, 220, 120, .04) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 220, 120, .04) 1px, transparent 1px); }
+.auth-page .auth-brand b { color: var(--amber); }
+.auth-page .eyebrow { border-color: rgba(255, 210, 63, .35); background: rgba(255, 210, 63, .08); color: var(--amber-soft); }
+.auth-page .auth-intro h1 span { background: linear-gradient(90deg, #ffe58a, #ffb800); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.auth-page .auth-intro p { color: #aaa38f; }
+.auth-page .auth-features .ico { background: rgba(255, 210, 63, .08); border-color: rgba(255, 210, 63, .22); color: var(--amber); }
+.auth-page .auth-features span { color: #8d8672; }
+.auth-page .auth-legal { color: #6b6554; }
+.auth-page .auth-footer svg { color: var(--amber); }
+
+.intro-stage { display: flex; align-items: flex-end; gap: clamp(1rem, 3vw, 2.5rem); }
+.intro-stage .auth-features { flex: 1; min-width: 0; align-self: center; }
+
+.lamp-scene { position: relative; flex: none; width: 200px; height: 380px; margin-left: clamp(0px, 5vw, 70px); }
+.lamp-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 2; }
+.lamp-halo, .lamp-cone, .lamp-pool { position: absolute; pointer-events: none; opacity: 0; transition: opacity .9s ease; }
+.lamp-halo { z-index: 0; left: 50%; top: 70px; width: 560px; height: 560px; transform: translate(-50%, -50%); background: radial-gradient(circle, rgba(255, 205, 70, .34), rgba(255, 190, 40, .1) 38%, transparent 66%); }
+.lamp-cone {
+  z-index: 1; left: 50%; top: 78px; width: 470px; height: 300px; transform: translateX(-50%) scaleY(.4); transform-origin: top; transition: opacity .9s ease, transform 1.1s var(--ease-out);
+  clip-path: polygon(36% 0, 64% 0, 100% 100%, 0 100%);
+  background: linear-gradient(to bottom, rgba(255, 224, 120, .72), rgba(255, 205, 70, .3) 45%, rgba(255, 190, 40, .04) 100%);
+}
+.lamp-pool { z-index: 1; left: 50%; bottom: -14px; width: 440px; height: 70px; transform: translateX(-50%); background: radial-gradient(ellipse, rgba(255, 210, 80, .35), transparent 68%); }
+.lamp-scene.on .lamp-halo, .lamp-scene.on .lamp-pool { opacity: 1; }
+.lamp-scene.on .lamp-cone { opacity: 1; transform: translateX(-50%) scaleY(1); }
+.lamp-scene.flicker .lamp-cone, .lamp-scene.flicker .lamp-halo { animation: fxFlicker .9s linear both; }
+.lamp-scene.on .lamp-halo { animation: fxBreath 6s ease-in-out 1s infinite; }
+
+.lamp-shade { fill: #1b1a16; stroke: #2b2820; stroke-width: 1; transition: fill .6s, stroke .6s; }
+.lamp-rim   { fill: #26231c; transition: fill .6s; }
+.lamp-bulb  { fill: #3b342a; transition: fill .5s, filter .6s; }
+.lamp-pole  { fill: #12110e; }
+.lamp-base  { fill: #1c1a15; }
+.lamp-base-top { fill: #25221b; }
+.lamp-cord  { stroke: #8d7a3e; stroke-width: 1.6; }
+.lamp-bead  { fill: #c9a23a; transition: fill .4s, filter .4s; }
+.lamp-bead-ring { fill: #ffe9a0; }
+.lamp-pullgroup { transform-box: fill-box; }
+.lamp-scene.pull .lamp-pullgroup { animation: fxCord .55s var(--ease-out); }
+.lamp-scene.on .lamp-shade { fill: #2c281c; stroke: #5b4f2c; }
+.lamp-scene.on .lamp-rim { fill: #3d3623; }
+.lamp-scene.on .lamp-bulb { fill: #fff6cf; filter: drop-shadow(0 0 8px #ffd84a) drop-shadow(0 0 22px #ffb800); }
+.lamp-scene.on .lamp-bead { fill: #ffd23f; filter: drop-shadow(0 0 5px rgba(255, 210, 63, .8)); }
+
+.lamp-pull { position: absolute; z-index: 3; left: 68%; top: 22%; width: 36px; height: 94px; transform: translateX(-50%); padding: 0; border: 0; border-radius: 8px; background: transparent; box-shadow: none; cursor: pointer; overflow: visible; }
+.lamp-pull:hover, .lamp-pull:active { background: transparent; border-color: transparent; transform: translateX(-50%); }
+.lamp-pull:focus-visible { box-shadow: 0 0 0 2px var(--amber); }
+.auth-intro .lamp-hint, .lamp-hint { position: absolute; left: 50%; top: calc(100% + .5rem); transform: translateX(-50%); margin: 0; white-space: nowrap; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: #6f6857; transition: opacity .5s; }
+.lamp-scene.on .lamp-hint { opacity: .6; }
+
+/* the intro column's copy lights up after the lamp does */
+html.fx .auth-page .auth-brand, html.fx .auth-page .intro-copy > *, html.fx .auth-page .auth-features li, html.fx .auth-page .auth-legal { opacity: 0; transform: translateY(14px); transition: opacity .8s var(--ease-out), transform .8s var(--ease-out); }
+html.fx .auth-page .auth-brand { transition-delay: .1s; }
+html.fx .auth-page .intro-copy > :nth-child(1) { transition-delay: .25s; }
+html.fx .auth-page .intro-copy > :nth-child(2) { transition-delay: .4s; }
+html.fx .auth-page .intro-copy > :nth-child(3) { transition-delay: .55s; }
+html.fx .auth-page .auth-features li:nth-child(1) { transition-delay: 1.0s; }
+html.fx .auth-page .auth-features li:nth-child(2) { transition-delay: 1.15s; }
+html.fx .auth-page .auth-features li:nth-child(3) { transition-delay: 1.3s; }
+html.fx .auth-page .auth-legal { transition-delay: 1.5s; }
+html.fx .auth-page.ready .auth-brand, html.fx .auth-page.ready .intro-copy > *, html.fx .auth-page.ready .auth-features li, html.fx .auth-page.ready .auth-legal { opacity: 1; transform: none; }
+
+/* the form: dim and out of focus in the dark, sharp once the room is lit */
+html.fx .auth-page .auth-card { position: relative; opacity: .22; filter: blur(2px) saturate(.5); transform: translateY(10px) scale(.985); transition: opacity 1.1s ease, filter 1.1s ease, transform 1.1s var(--ease-out); }
+html.fx .auth-page.lit .auth-card { opacity: 1; filter: none; transform: none; }
+html.fx .auth-page .auth-card.shake { animation: fxShake .5s ease; }
+
+@media (min-width: 961px) {
+  /* frosted-glass card, like the video */
+  html.fx .auth-page .auth-card, .auth-page .auth-card {
+    padding: 2.25rem 2rem; border-radius: 22px; width: min(440px, 100% - 3rem);
+    background: linear-gradient(160deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02));
+    border: 1px solid rgba(255, 220, 120, .14); box-shadow: 0 30px 80px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .06);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  }
+}
+.auth-page .auth-card::before { /* cursor-following highlight */
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 210, 63, .12), transparent 60%);
+}
+.auth-page .auth-card:hover::before { opacity: 1; }
+.auth-page .auth-card input, .auth-page .auth-card select { background: rgba(0, 0, 0, .35); border-color: #34302a; color: var(--ink); }
+.auth-page .auth-card input::placeholder { color: #6f6857; }
+.auth-page .auth-card input:hover, .auth-page .auth-card select:hover { border-color: #5a5030; }
+.auth-page .auth-card input:focus, .auth-page .auth-card select:focus { border-color: var(--amber); box-shadow: var(--focus); background: rgba(0, 0, 0, .5); }
+.auth-page .auth-tabs { background: rgba(255, 255, 255, .05); position: relative; }
+.auth-page .auth-tab { transition: color .25s, background .25s, box-shadow .25s; }
+.auth-page .auth-tab.active { background: rgba(255, 210, 63, .14); color: var(--amber-soft); box-shadow: inset 0 0 0 1px rgba(255, 210, 63, .3); }
+.auth-page .auth-tab:hover { color: var(--ink); background: transparent; }
+.auth-page button.primary { color: #1a1500; background: linear-gradient(180deg, #ffdb4f, #f5c400); border-color: #f5c400; font-weight: 700; box-shadow: 0 6px 22px rgba(255, 200, 40, .28); }
+.auth-page button.primary:hover { background: linear-gradient(180deg, #ffe66f, #ffd21f); border-color: #ffd21f; box-shadow: 0 8px 30px rgba(255, 200, 40, .45); }
+.auth-page .auth-tab:hover, .auth-page button.primary:focus-visible { box-shadow: var(--focus); }
+.auth-page .auth-tab.active:hover { box-shadow: inset 0 0 0 1px rgba(255, 210, 63, .3); }
+.auth-page .error { color: #ff9a9e; }
+.auth-page .auth-footer { border-top-color: rgba(255, 255, 255, .08); }
+
+/* staggered fields once the room lights up (restarts each time the tab switches) */
+html.fx .auth-page.lit .auth-card h2 { animation: fxUp .7s var(--ease-out) .2s both; }
+html.fx .auth-page.lit .auth-subtitle { animation: fxUp .7s var(--ease-out) .3s both; }
+html.fx .auth-page.lit .auth-tabs { animation: fxUp .7s var(--ease-out) .4s both; }
+html.fx .auth-page.lit .auth-card form:not([hidden]) > * { animation: fxUp .6s var(--ease-out) both; }
+html.fx .auth-page.lit .auth-card form:not([hidden]) > :nth-child(1) { animation-delay: .5s; }
+html.fx .auth-page.lit .auth-card form:not([hidden]) > :nth-child(2) { animation-delay: .6s; }
+html.fx .auth-page.lit .auth-card form:not([hidden]) > :nth-child(3) { animation-delay: .7s; }
+html.fx .auth-page.lit .auth-card form:not([hidden]) > :nth-child(4) { animation-delay: .8s; }
+html.fx .auth-page.lit .auth-card form:not([hidden]) > :nth-child(5) { animation-delay: .9s; }
+html.fx .auth-page.lit .auth-card form:not([hidden]) > :nth-child(6) { animation-delay: 1s; }
+html.fx .auth-page.lit .auth-footer { animation: fxFade .8s ease 1.1s both; }
+/* after the first reveal, tab switching should feel instant */
+html.fx .auth-page.settled .auth-card h2, html.fx .auth-page.settled .auth-subtitle, html.fx .auth-page.settled .auth-tabs, html.fx .auth-page.settled .auth-footer { animation: none; }
+html.fx .auth-page.settled .auth-card form:not([hidden]) > * { animation-duration: .45s; animation-delay: 0s !important; }
+html.fx .auth-page.settled .auth-card form:not([hidden]) > :nth-child(2) { animation-delay: .05s !important; }
+html.fx .auth-page.settled .auth-card form:not([hidden]) > :nth-child(3) { animation-delay: .1s !important; }
+html.fx .auth-page.settled .auth-card form:not([hidden]) > :nth-child(4) { animation-delay: .15s !important; }
+html.fx .auth-page.settled .auth-card form:not([hidden]) > :nth-child(5) { animation-delay: .2s !important; }
+html.fx .auth-page.settled .auth-card form:not([hidden]) > :nth-child(6) { animation-delay: .25s !important; }
+
+/* narrow screens: lamp becomes a short banner above the form */
+@media (max-width: 960px) {
+  .auth-page .auth-intro { padding: 1.5rem 1.5rem 0; gap: 1.1rem; }
+  .auth-page .intro-copy p, .auth-page .eyebrow { display: none; }
+  .auth-page .intro-copy h1 { font-size: 1.9rem; margin-bottom: 0; }
+  .auth-page .auth-features { display: none; }
+  .auth-page .intro-stage { justify-content: center; height: 210px; margin-top: .5rem; }
+  .auth-page .lamp-scene { transform: scale(.55); transform-origin: top center; margin-bottom: -170px; }
+  .auth-page .lamp-hint { display: none; }
+  .auth-page .lamp-cone { width: 520px; }
+  .auth-page .auth-card { padding: 1.5rem 0 2.5rem; }
+}
+
+/* ==========================================================================
+   Reduced motion: everything lands in its final state with no movement
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; transition-delay: 0s !important; }
+  .fireflies { display: none; }
+  html.fx .auth-page .auth-card { opacity: 1; filter: none; transform: none; }
+}
+@media print { .fireflies, body::before { display: none !important; } }
+
+/* ==========================================================================
+   App theme — the same dark room as the sign-in screen
+   Applies to Dashboard, Documents, Sharing and Administration (every page
+   except the login, which has its own scene above). Always dark, like the
+   video, whatever the OS theme is.
+   ========================================================================== */
+body:not(.auth-page) {
+  --navy-950: #070706; --navy-900: #0d0c0a; --navy-800: #16140f; --navy-700: #221f16;
+  --brand: #ffd23f; --brand-hover: #ffe27a; --brand-soft: #2b2410;
+  --teal: #ff9f43; --teal-soft: #33220f;
+  --bg: #0a0a0c; --panel: #131216; --panel-2: #19171c;
+  --ink: #f4f0e6; --ink-2: #d8d2c2; --muted: #9a937f;
+  --line: #2a2720; --line-strong: #3a352a;
+  --accent: #ffd23f; --accent-ink: #1a1500; --chip: #1e1c17;
+  --danger: #ff8a8f; --danger-soft: #3a1618;
+  --warn: #f0b252; --warn-soft: #382a0d;
+  --ok: #62d48c; --ok-soft: #10301e;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .5);
+  --shadow-md: 0 14px 34px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4);
+  --focus: 0 0 0 3px rgba(255, 210, 63, .28);
+  color-scheme: dark;
+  background: radial-gradient(1200px 600px at 85% -10%, rgba(255, 200, 70, .05), transparent 60%), #0a0a0c;
+  background-attachment: fixed;
+}
+body:not(.auth-page) .top { background: linear-gradient(180deg, #14120d, #0d0c0a); border-bottom-color: rgba(255, 210, 63, .14); box-shadow: 0 2px 18px rgba(0, 0, 0, .55); }
+body:not(.auth-page) .brand b { color: var(--amber); }
+body:not(.auth-page) nav a { color: #aaa38f; }
+body:not(.auth-page) nav a:hover { color: #fff; background: rgba(255, 210, 63, .06); }
+body:not(.auth-page) nav a[aria-current="page"] { color: #fff; border-color: transparent; }
+body:not(.auth-page) .avatar { background: linear-gradient(135deg, #ffd23f, #ff9f43); color: #1a1500; }
+body:not(.auth-page) .who { color: #aaa38f; }
+body:not(.auth-page) .who-text small { color: #8d8672; }
+body:not(.auth-page) .who button.link { color: var(--amber-soft); border-color: rgba(255, 210, 63, .28); }
+body:not(.auth-page) .who button.link:hover { background: rgba(255, 210, 63, .1); border-color: rgba(255, 210, 63, .55); }
+body:not(.auth-page) h1 { background: linear-gradient(90deg, #fff7dc, #ffe58a 60%, #ffc23a); -webkit-background-clip: text; background-clip: text; color: transparent; width: fit-content; max-width: 100%; }
+body:not(.auth-page) h2::before { background: linear-gradient(180deg, #ffe27a, #ff9f43); box-shadow: 0 0 10px rgba(255, 210, 63, .5); }
+/* frosted panels, so the lamp's light shows through the gaps */
+body:not(.auth-page) .card,
+body:not(.auth-page) .table-wrap,
+body:not(.auth-page) .alert { background: linear-gradient(160deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .02)), rgba(19, 18, 22, .86); border-color: rgba(255, 220, 120, .13); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+body:not(.auth-page) .stat b { color: #fff3c4; text-shadow: 0 0 22px rgba(255, 210, 63, .35); }
+body:not(.auth-page) th { background: rgba(255, 210, 63, .05); color: #b9ae8c; }
+body:not(.auth-page) tbody tr:hover { background: rgba(255, 210, 63, .05); }
+body:not(.auth-page) td, body:not(.auth-page) th { border-bottom-color: rgba(255, 220, 120, .1); }
+body:not(.auth-page) input, body:not(.auth-page) select { background: rgba(0, 0, 0, .35); border-color: #34302a; color: var(--ink); }
+body:not(.auth-page) input::placeholder { color: #6f6857; }
+body:not(.auth-page) input:hover, body:not(.auth-page) select:hover { border-color: #5a5030; }
+body:not(.auth-page) input:focus, body:not(.auth-page) select:focus { border-color: var(--amber); box-shadow: var(--focus); background: rgba(0, 0, 0, .5); }
+body:not(.auth-page) input[type="file"] { background: rgba(0, 0, 0, .3); }
+body:not(.auth-page) input[type="file"]::file-selector-button { background: #1e1c17; color: var(--ink); border-color: #3a352a; }
+body:not(.auth-page) button { background: #1b1914; border-color: #3a352a; color: var(--ink); }
+body:not(.auth-page) button:hover { background: #24211a; border-color: var(--amber); }
+body:not(.auth-page) button.primary { background: linear-gradient(180deg, #ffdb4f, #f5c400); border-color: #f5c400; color: #1a1500; font-weight: 700; box-shadow: 0 4px 16px rgba(255, 200, 40, .22); }
+body:not(.auth-page) button.primary:hover { background: linear-gradient(180deg, #ffe66f, #ffd21f); border-color: #ffd21f; box-shadow: 0 6px 24px rgba(255, 200, 40, .4); }
+body:not(.auth-page) button.danger { background: transparent; }
+body:not(.auth-page) button.danger:hover { background: var(--danger-soft); }
+body:not(.auth-page) button.link, body:not(.auth-page) button.link:hover { background: none; border: 0; }
+body:not(.auth-page) .chip.owner { background: linear-gradient(180deg, #ffdb4f, #f5c400); color: #1a1500; }
+body:not(.auth-page) .site-footer { background: #0d0c0a; border-top-color: rgba(255, 210, 63, .12); }
+body:not(.auth-page) #toast { background: #1b1914; border-left-color: var(--amber); box-shadow: 0 0 0 1px rgba(255, 210, 63, .2), var(--shadow-md); }
+body:not(.auth-page) #toast.bad { background: #3a1618; border-left-color: #ff8a8f; }
+body:not(.auth-page) pre.detail { color: #a59e88; }
+
+/* ==========================================================================
+   The pendant lamp inside the app
+   A small lamp hangs from the top bar on every page. It switches on after the
+   page loads (cord pulls, bulb flickers, cone of light spreads over the
+   content). Click it to switch it off or on; the choice is remembered.
+   ========================================================================== */
+.page-light, .page-lamp { position: fixed; right: clamp(.75rem, 22vw, 22rem); pointer-events: none; }
+.page-light { z-index: 0; top: 118px; width: 0; height: 0; }
+.page-light::before, .page-light::after { content: ""; position: absolute; opacity: 0; transition: opacity 1s ease; pointer-events: none; }
+.page-light::before { /* cone */
+  top: 0; left: -300px; width: 600px; height: min(72vh, 620px);
+  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+  background: linear-gradient(to bottom, rgba(255, 214, 90, .26), rgba(255, 200, 60, .08) 55%, transparent 100%);
+  transform: scaleY(.4); transform-origin: top; transition: opacity 1s ease, transform 1.2s var(--ease-out);
+}
+.page-light::after { /* halo around the shade */
+  top: -90px; left: -240px; width: 480px; height: 360px;
+  background: radial-gradient(ellipse at 50% 24%, rgba(255, 205, 70, .22), rgba(255, 190, 40, .06) 45%, transparent 70%);
+}
+body.lamp-on .page-light::before { opacity: 1; transform: scaleY(1); }
+body.lamp-on .page-light::after { opacity: 1; animation: fxBreath 6s ease-in-out 1.2s infinite; }
+body.lamp-flicker .page-light::before, body.lamp-flicker .page-light::after { animation: fxFlicker .9s linear both; }
+
+.page-lamp { z-index: 19; top: 54px; width: 84px; height: 105px; }
+.page-lamp-svg { width: 100%; height: 100%; overflow: visible; display: block; }
+.pl-cord { stroke: #6b5d33; stroke-width: 1.5; }
+.pl-cap { fill: #2a2619; }
+.pl-shade { fill: #1d1b16; stroke: #2e2a1f; stroke-width: 1; transition: fill .6s, stroke .6s; }
+.pl-rim { fill: #28251c; transition: fill .6s; }
+.pl-bulb { fill: #3b342a; transition: fill .5s, filter .6s; }
+.pl-chain { stroke: #8d7a3e; stroke-width: 1.3; }
+.pl-bead { fill: #c9a23a; transition: fill .4s, filter .4s; }
+.pl-pull { transform-box: fill-box; }
+body.lamp-tug .pl-pull { animation: fxCord .55s var(--ease-out); }
+body.lamp-on .pl-shade { fill: #2e2a1d; stroke: #6a5b30; }
+body.lamp-on .pl-rim { fill: #413924; }
+body.lamp-on .pl-bulb { fill: #fff6cf; filter: drop-shadow(0 0 6px #ffd84a) drop-shadow(0 0 16px #ffb800); }
+body.lamp-on .pl-bead { fill: #ffd23f; filter: drop-shadow(0 0 4px rgba(255, 210, 63, .8)); }
+body:not(.auth-page) .page-lamp .page-lamp-btn, .page-lamp-btn { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; border-radius: 12px; background: transparent; box-shadow: none; cursor: pointer; pointer-events: auto; overflow: visible; }
+body:not(.auth-page) .page-lamp .page-lamp-btn:hover, body:not(.auth-page) .page-lamp .page-lamp-btn:active { background: transparent; border-color: transparent; transform: none; box-shadow: none; }
+.page-lamp-btn:focus-visible { box-shadow: 0 0 0 2px var(--amber); }
+html.fx .page-lamp { animation: fxDown 1s var(--ease-out) .4s both; }
+@media (max-width: 760px) {
+  .page-lamp { scale: .72; transform-origin: top right; right: .75rem; top: 108px; }
+  .page-light { right: .75rem; top: 172px; }
+  .page-light::before { width: 420px; left: -210px; }
+}
+@media print { .page-lamp, .page-light { display: none !important; } }
+
+/* ==========================================================================
+   Notifications (e.g. "Account created. Please sign in.") — goldish yellow
+   ========================================================================== */
+#toast:not(.bad) {
+  display: flex; align-items: center; gap: .65rem; color: #ffd23f; font-weight: 600; letter-spacing: .005em;
+  background: linear-gradient(160deg, #221d0c, #14110a); border: 1px solid rgba(255, 210, 63, .45); border-left: 4px solid #ffd23f;
+  box-shadow: 0 0 0 1px rgba(255, 210, 63, .1), 0 12px 34px rgba(0, 0, 0, .6), 0 0 28px rgba(255, 210, 63, .22);
+  text-shadow: 0 0 14px rgba(255, 210, 63, .35);
+}
+#toast:not(.bad)::before {
+  content: "\2713"; flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: linear-gradient(180deg, #ffe27a, #f0a800); color: #1a1500; font-size: .8rem; font-weight: 800; text-shadow: none;
+}
