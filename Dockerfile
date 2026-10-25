@@ -8,7 +8,7 @@ RUN addgroup -S tv && adduser -S tv -G tv && mkdir -p /data && chown -R tv:tv /d
 USER tv
 VOLUME /data
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1:3000/healthz || exit 1
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- "http://127.0.0.1:${PORT:-3000}/healthz" || exit 1
 WORKDIR /app/backend
 # FILE_ENC_KEY and AUDIT_HMAC_KEY (64 hex each) must be supplied as environment variables; startup fails without them.
 CMD ["node", "--disable-warning=ExperimentalWarning", "src/server.js"]

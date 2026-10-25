@@ -10,27 +10,56 @@ function parseDotenv(text) {
     const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
     if (m && !line.trim().startsWith('#')) {
       let val = m[2].trim();
-      val = val.replace(/^["'](.*)["']$/, '$1').trim();
+      val = val.replace(/^["']+|["']+$/g, '').trim();
       out[m[1]] = val;
     }
   }
   return out;
 }
 
-function cleanHexKey(rawValue) {
-  if (typeof rawValue !== 'string') return rawValue;
-  let val = rawValue.trim();
-  // Strip enclosing quotes if present (e.g. "abc..." or 'abc...')
-  val = val.replace(/^["'](.*)["']$/, '$1').trim();
+function cleanHexKey(name, rawValue) {
+  let val = typeof rawValue === 'string' ? rawValue : (typeof name === 'string' && arguments.length === 1 ? name : '');
+  const varName = arguments.length > 1 ? name : null;
+  if (!val || typeof val !== 'string') return val;
+
+  // Strip zero-width characters and BOM often copied from browser/clipboard
+  val = val.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+
+  // Strip leading 'export ' if copied from shell script
+  if (/^export\s+/i.test(val)) {
+    val = val.replace(/^export\s+/i, '').trim();
+  }
+
+  // Strip leading 'VARIABLE_NAME=' if the variable name was pasted into the value box
+  if (varName) {
+    const namePrefix = new RegExp(`^${varName}\\s*=\\s*`, 'i');
+    if (namePrefix.test(val)) {
+      val = val.replace(namePrefix, '').trim();
+    }
+  }
+
+  // Strip inline comments if pasted from .env (e.g. "key # comment")
+  const commentIdx = val.indexOf('#');
+  if (commentIdx > 0) {
+    val = val.slice(0, commentIdx).trim();
+  }
+
+  // Strip enclosing quotes (e.g. "abc..." or 'abc...')
+  val = val.replace(/^["']+|["']+$/g, '').trim();
+
+  // Strip trailing semicolon or comma if pasted from code
+  val = val.replace(/[;,]+$/, '').trim();
+
   // Strip 0x or 0X prefix if present with 64 hex digits
   if (/^0x[0-9a-f]{64}$/i.test(val)) {
     val = val.slice(2);
   }
+
   return val;
 }
 
 function hexKey(name, rawValue) {
-  const value = cleanHexKey(rawValue);
+  const value = cleanHexKey(name, rawValue);
 
   if (!value) {
     throw new Error(
@@ -43,8 +72,14 @@ function hexKey(name, rawValue) {
   }
 
   if (value.length !== 64) {
+    let explanation = '';
+    if (value.length === 32 || value.length === 33) {
+      explanation = ' NOTE: You provided approximately 32 characters. In hexadecimal, 32 bytes requires 64 characters (2 hex digits per byte). A 32-character string is only 16 bytes.';
+    } else if (value.startsWith('<') && value.endsWith('>')) {
+      explanation = ' NOTE: You entered template placeholder text (like <...>) instead of a real key.';
+    }
     throw new Error(
-      `Environment variable "${name}" must be exactly 64 hexadecimal characters (32 bytes), but received length ${value.length}. Check for truncated keys, missing characters, or placeholder text (like <...> from example files).`
+      `Environment variable "${name}" must be exactly 64 hexadecimal characters (32 bytes), but received length ${value.length}.${explanation} Run 'node -e "console.log(require(\\'crypto\\').randomBytes(32).toString(\\'hex\\'))"' to generate a valid 64-hex key.`
     );
   }
 
@@ -105,7 +140,6 @@ function loadConfig(overrides = {}) {
     retentionDays: overrides.retentionDays ?? Number(get('RETENTION_DAYS', '30')),
     loginRatePerMinute: overrides.loginRatePerMinute ?? Number(get('LOGIN_RATE_PER_MINUTE', '10')),
     apiRatePerMinute: overrides.apiRatePerMinute ?? Number(get('API_RATE_PER_MINUTE', '600')),
-    // Registration code required to self-register as an administrator. Empty/unset = admin sign-up disabled.
     adminRegistrationCode: overrides.adminRegistrationCode ?? get('ADMIN_REGISTRATION_CODE', ''),
     scryptN: overrides.scryptN,
     lockoutThreshold: overrides.lockoutThreshold ?? 5,

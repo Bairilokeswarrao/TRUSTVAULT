@@ -27,7 +27,18 @@ test('E-02 hexKey trims whitespace, strips quotes, and removes 0x prefix', () =>
   assert.equal(hexKey('AUDIT_HMAC_KEY', with0XUpper).toString('hex'), raw);
 });
 
-test('E-03 resolveEnv finds lowercase and trailing-space environment variables', () => {
+test('E-03 hexKey strips name prefixes, export keywords, and inline comments', () => {
+  const raw = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  const withNamePrefix = `AUDIT_HMAC_KEY=${raw}`;
+  const withExport = `export AUDIT_HMAC_KEY="${raw}"`;
+  const withComment = `${raw} # production audit key`;
+
+  assert.equal(hexKey('AUDIT_HMAC_KEY', withNamePrefix).toString('hex'), raw);
+  assert.equal(hexKey('AUDIT_HMAC_KEY', withExport).toString('hex'), raw);
+  assert.equal(hexKey('AUDIT_HMAC_KEY', withComment).toString('hex'), raw);
+});
+
+test('E-04 resolveEnv finds lowercase and trailing-space environment variables', () => {
   process.env['test_crypto_key_lowercase'] = '1234';
   process.env['TEST_CRYPTO_KEY_TRAILING '] = '5678';
 
@@ -38,7 +49,7 @@ test('E-03 resolveEnv finds lowercase and trailing-space environment variables',
   delete process.env['TEST_CRYPTO_KEY_TRAILING '];
 });
 
-test('E-04 missing key throws clear error with guidance', () => {
+test('E-05 missing key throws clear error with guidance', () => {
   assert.throws(
     () => hexKey('AUDIT_HMAC_KEY', undefined),
     /Missing required environment variable "AUDIT_HMAC_KEY"/
@@ -49,7 +60,7 @@ test('E-04 missing key throws clear error with guidance', () => {
   );
 });
 
-test('E-05 key with invalid length fails fast without leaking secret', () => {
+test('E-06 key with invalid length fails fast without leaking secret', () => {
   const secretAttempt = 'my-super-secret-password-123';
   assert.throws(
     () => hexKey('AUDIT_HMAC_KEY', secretAttempt),
@@ -63,7 +74,7 @@ test('E-05 key with invalid length fails fast without leaking secret', () => {
   );
 });
 
-test('E-06 key with non-hex characters fails fast', () => {
+test('E-07 key with non-hex characters fails fast', () => {
   const invalidHex = 'g'.repeat(64);
   assert.throws(
     () => hexKey('AUDIT_HMAC_KEY', invalidHex),
@@ -71,7 +82,7 @@ test('E-06 key with non-hex characters fails fast', () => {
   );
 });
 
-test('E-07 AUDIT_HMAC_KEY and FILE_ENC_KEY cannot be identical', () => {
+test('E-08 AUDIT_HMAC_KEY and FILE_ENC_KEY cannot be identical', () => {
   const sameKey = crypto.randomBytes(32);
   assert.throws(
     () => loadConfig({ auditKey: sameKey, fileKey: sameKey }),
