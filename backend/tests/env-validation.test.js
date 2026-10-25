@@ -27,18 +27,29 @@ test('E-02 hexKey trims whitespace, strips quotes, and removes 0x prefix', () =>
   assert.equal(hexKey('AUDIT_HMAC_KEY', with0XUpper).toString('hex'), raw);
 });
 
-test('E-03 hexKey strips name prefixes, export keywords, and inline comments', () => {
+test('E-03 hexKey strips name prefixes, export keywords, zero-width spaces, and inline comments', () => {
   const raw = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
   const withNamePrefix = `AUDIT_HMAC_KEY=${raw}`;
   const withExport = `export AUDIT_HMAC_KEY="${raw}"`;
   const withComment = `${raw} # production audit key`;
+  const withZeroWidth = `\u200B${raw}\uFEFF`;
 
   assert.equal(hexKey('AUDIT_HMAC_KEY', withNamePrefix).toString('hex'), raw);
   assert.equal(hexKey('AUDIT_HMAC_KEY', withExport).toString('hex'), raw);
   assert.equal(hexKey('AUDIT_HMAC_KEY', withComment).toString('hex'), raw);
+  assert.equal(hexKey('AUDIT_HMAC_KEY', withZeroWidth).toString('hex'), raw);
 });
 
-test('E-04 resolveEnv finds lowercase and trailing-space environment variables', () => {
+test('E-04 33-character or passphrase input safely derives a deterministic 32-byte key via SHA-256', () => {
+  const key33 = 'a'.repeat(33);
+  const buf = hexKey('AUDIT_HMAC_KEY', key33);
+  assert.ok(Buffer.isBuffer(buf));
+  assert.equal(buf.length, 32);
+  const expected = crypto.createHash('sha256').update(key33).digest();
+  assert.equal(buf.toString('hex'), expected.toString('hex'));
+});
+
+test('E-05 resolveEnv finds lowercase and trailing-space environment variables', () => {
   process.env['test_crypto_key_lowercase'] = '1234';
   process.env['TEST_CRYPTO_KEY_TRAILING '] = '5678';
 
@@ -49,7 +60,7 @@ test('E-04 resolveEnv finds lowercase and trailing-space environment variables',
   delete process.env['TEST_CRYPTO_KEY_TRAILING '];
 });
 
-test('E-05 missing key throws clear error with guidance', () => {
+test('E-06 missing key throws clear error with guidance', () => {
   assert.throws(
     () => hexKey('AUDIT_HMAC_KEY', undefined),
     /Missing required environment variable "AUDIT_HMAC_KEY"/
@@ -60,25 +71,15 @@ test('E-05 missing key throws clear error with guidance', () => {
   );
 });
 
-test('E-06 key with invalid length fails fast without leaking secret', () => {
-  const secretAttempt = 'my-super-secret-password-123';
+test('E-07 key that is too short (< 16 chars) fails fast without leaking secret', () => {
+  const shortAttempt = 'short-secret';
   assert.throws(
-    () => hexKey('AUDIT_HMAC_KEY', secretAttempt),
+    () => hexKey('AUDIT_HMAC_KEY', shortAttempt),
     (err) => {
-      assert.ok(err.message.includes('must be exactly 64 hexadecimal characters'));
-      assert.ok(err.message.includes(`received length ${secretAttempt.length}`));
-      // Verify secret value is NEVER leaked in the error message
-      assert.ok(!err.message.includes(secretAttempt));
+      assert.ok(err.message.includes('too short'));
+      assert.ok(!err.message.includes(shortAttempt));
       return true;
     }
-  );
-});
-
-test('E-07 key with non-hex characters fails fast', () => {
-  const invalidHex = 'g'.repeat(64);
-  assert.throws(
-    () => hexKey('AUDIT_HMAC_KEY', invalidHex),
-    /contains non-hexadecimal characters/
   );
 });
 

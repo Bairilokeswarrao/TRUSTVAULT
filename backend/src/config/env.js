@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const BACKEND_ROOT = path.resolve(__dirname, '..', '..');
 
@@ -58,12 +59,18 @@ function cleanHexKey(name, rawValue) {
   return val;
 }
 
+/**
+ * Validates and converts an environment variable key into a 32-byte cryptographic Buffer.
+ * 1. If 64 hex characters (32 bytes): directly decoded from hex (matches existing database/files).
+ * 2. If 32-character UTF-8 string: directly converted to 32 bytes.
+ * 3. If a passphrase (>= 16 characters): safely and deterministically derived via SHA-256 into 32 bytes.
+ */
 function hexKey(name, rawValue) {
   const value = cleanHexKey(name, rawValue);
 
   if (!value) {
     throw new Error(
-      `Missing required environment variable "${name}". In production (Render), go to your Web Service > Environment tab, and add ${name} with a 64-hex-character value (32 bytes). For local development, run "npm run init" to generate a backend/.env file.`
+      `Missing required environment variable "${name}". In production (Render), go to your Web Service > Environment tab, and add ${name}.`
     );
   }
 
@@ -71,25 +78,25 @@ function hexKey(name, rawValue) {
     throw new Error(`Environment variable "${name}" must be a string.`);
   }
 
-  if (value.length !== 64) {
-    let explanation = '';
-    if (value.length === 32 || value.length === 33) {
-      explanation = ' NOTE: You provided approximately 32 characters. In hexadecimal, 32 bytes requires 64 characters (2 hex digits per byte). A 32-character string is only 16 bytes.';
-    } else if (value.startsWith('<') && value.endsWith('>')) {
-      explanation = ' NOTE: You entered template placeholder text (like <...>) instead of a real key.';
-    }
-    throw new Error(
-      `Environment variable "${name}" must be exactly 64 hexadecimal characters (32 bytes), but received length ${value.length}.${explanation} Run 'node -e "console.log(require(\\'crypto\\').randomBytes(32).toString(\\'hex\\'))"' to generate a valid 64-hex key.`
-    );
+  // 1. Preferred standard: 64-character hexadecimal key (representing 32 bytes)
+  if (value.length === 64 && /^[0-9a-f]{64}$/i.test(value)) {
+    return Buffer.from(value, 'hex');
   }
 
-  if (!/^[0-9a-f]{64}$/i.test(value)) {
-    throw new Error(
-      `Environment variable "${name}" contains non-hexadecimal characters. It must contain only hex digits (0-9, a-f).`
-    );
+  // 2. Direct 32-byte UTF-8 string
+  if (Buffer.byteLength(value, 'utf8') === 32) {
+    return Buffer.from(value, 'utf8');
   }
 
-  return Buffer.from(value, 'hex');
+  // 3. Resilient key derivation: if supplied as a passphrase (>= 16 characters),
+  // deterministically hash into a 256-bit (32-byte) key so the service starts reliably.
+  if (value.length >= 16) {
+    return crypto.createHash('sha256').update(value, 'utf8').digest();
+  }
+
+  throw new Error(
+    `Environment variable "${name}" is too short (${value.length} characters). It must be at least 16 characters or 64 hexadecimal characters.`
+  );
 }
 
 /**
