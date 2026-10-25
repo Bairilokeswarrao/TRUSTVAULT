@@ -1,0 +1,15 @@
+{
+  "name": "trustvault",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TrustVault root package delegating to backend",
+  "scripts": {
+    "start": "npm --prefix backend start",
+    "init": "npm --prefix backend run init",
+    "seed": "npm --prefix backend run seed",
+    "test": "npm --prefix backend test"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}
