@@ -1,0 +1,22 @@
+# The front end is plain static HTML/CSS/JS in `frontend/` — no build step.
+[build]
+  publish = "frontend"
+  command = ""
+
+# Mirror the Node server: the site root lands on the sign-in page.
+[[redirects]]
+  from = "/"
+  to = "/login.html"
+  status = 302
+
+# Same security headers the Node static server sends (backend/src/http.js).
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Resource-Policy = "same-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
